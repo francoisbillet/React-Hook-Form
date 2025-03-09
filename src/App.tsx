@@ -1,7 +1,9 @@
-import { CreateHubvisor } from "./CreateHubvisor";
+import { CreateHubvisorRHF } from "./CreateHubvisorRHF";
+import { CreateHubvisorVanilla } from "./CreateHubvisorVanilla";
 
 function App() {
-  return <CreateHubvisor />;
+  // return <CreateHubvisorVanilla />;
+  return <CreateHubvisorRHF />;
 }
 
 export default App;
