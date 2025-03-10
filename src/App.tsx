@@ -1,9 +1,13 @@
 import { CreateHubvisorRHF } from "./CreateHubvisorRHF";
-import { CreateHubvisorVanilla } from "./CreateHubvisorVanilla";
+import { Zod } from "./Zod";
 
 function App() {
-  // return <CreateHubvisorVanilla />;
-  return <CreateHubvisorRHF />;
+  return (
+    <>
+      <CreateHubvisorRHF />;
+      <Zod />
+    </>
+  );
 }
 
 export default App;

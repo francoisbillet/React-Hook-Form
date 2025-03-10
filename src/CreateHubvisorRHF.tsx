@@ -8,21 +8,23 @@ import {
   useFormState,
   useWatch,
 } from "react-hook-form";
-import { Hubvisor } from "./hubvisor.types";
 import { createHubvisor } from "./hubvisor.api";
 import { DevTool } from "@hookform/devtools";
-import { HTMLInputTypeAttribute, ReactNode, useEffect } from "react";
+import { HTMLInputTypeAttribute, useEffect } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { HubvisorSchema, ZodHubvisor } from "./Zod";
 
 export function CreateHubvisorRHF() {
-  const methods = useForm<Hubvisor>({
+  const methods = useForm<ZodHubvisor>({
     defaultValues: { firstName: "Toto" },
     mode: "onSubmit",
     reValidateMode: "onChange",
+    resolver: zodResolver(HubvisorSchema),
   });
 
   const { handleSubmit, control } = methods;
 
-  function onSubmit(hubvisor: Hubvisor) {
+  function onSubmit(hubvisor: ZodHubvisor) {
     console.log("submitting form...");
     createHubvisor(hubvisor);
   }
@@ -53,18 +55,18 @@ function FormInput({
   label,
   type,
   rules,
-  errorsToDisplay,
 }: {
-  name: keyof Hubvisor;
+  name: keyof ZodHubvisor;
   label: string;
   type?: HTMLInputTypeAttribute;
-  rules?: RegisterOptions<Hubvisor, keyof Hubvisor>;
-  errorsToDisplay?: ReactNode;
+  rules?: RegisterOptions<ZodHubvisor, keyof ZodHubvisor>;
 }) {
   const {
     register,
     formState: { errors },
-  } = useFormContext<Hubvisor>();
+  } = useFormContext<ZodHubvisor>();
+
+  console.log(errors);
 
   return (
     <div className="flex flex-col gap-1">
@@ -72,70 +74,49 @@ function FormInput({
         {`${label}${rules?.required ? "*" : ""}`}
         <input
           type={type ?? "text"}
-          {...register(name, rules)}
+          {...register(name)}
           className="w-[200px]"
         />
       </label>
-      {errors[name] && errorsToDisplay}
+      <span className="text-red-500 text-sm italic">
+        {errors[name]?.message}
+      </span>
     </div>
   );
 }
 
 function PersonalInfo() {
-  const { errors } = useFormState<Hubvisor>();
-
   return (
     <>
       <h2>Infos personnelles</h2>
       <div className="flex gap-2 items-start">
-        <FormInput
-          name="name"
-          label="Nom"
-          rules={{ required: true }}
-          errorsToDisplay={
-            <span className="text-red-500 text-sm italic">
-              Ce champ est obligatoire
-            </span>
-          }
-        />
-        <FormInput
-          name="firstName"
-          label="Prénom"
-          rules={{ required: true }}
-          errorsToDisplay={
-            <span className="text-red-500 text-sm italic">
-              Ce champ est obligatoire
-            </span>
-          }
-        />
+        <FormInput name="name" label="Nom" rules={{ required: true }} />
+        <FormInput name="firstName" label="Prénom" rules={{ required: true }} />
         <FormInput
           name="age"
           type="number"
           label="Âge"
-          rules={{ min: 18, max: 99 }}
-          errorsToDisplay={
-            <span className="text-red-500 text-sm italic">
-              {errors.age?.type === "min" && "L'âge minimum est 18 ans"}
-              {errors.age?.type === "max" && "L'âge maximum est 99 ans"}
-              {errors.age?.type === "required" && "Ce champ est obligatoire"}
-            </span>
-          }
+          //   errorsToDisplay={
+          //     <span className="text-red-500 text-sm italic">
+          //       {errors.age?.message}
+          //       {/* {errors.age?.type === "min" && "L'âge minimum est 18 ans"}
+          //       {errors.age?.type === "max" && "L'âge maximum est 99 ans"}
+          //       {errors.age?.type === "required" && "Ce champ est obligatoire"} */}
+          //     </span>
+          //   }
         />
         <FormInput
           name="email"
           type="email"
           label="Adresse mail"
-          rules={{
-            required: true,
-            pattern: /^((?!\.)[\w-_.]*[^.])(@\w+)(\.\w+(\.\w+)?[^.\W])$/gim,
-          }}
-          errorsToDisplay={
-            <span className="text-red-500 text-sm italic">
-              {errors.email?.type === "pattern" &&
-                "L'adresse mail n'est pas valide"}
-              {errors.email?.type === "required" && "Ce champ est obligatoire"}
-            </span>
-          }
+          rules={{ required: true }}
+          //   errorsToDisplay={
+          //     <span className="text-red-500 text-sm italic">
+          //       {errors.email?.type === "pattern" &&
+          //         "L'adresse mail n'est pas valide"}
+          //       {errors.email?.type === "required" && "Ce champ est obligatoire"}
+          //     </span>
+          //   }
         />
       </div>
     </>
@@ -148,9 +129,9 @@ function HubInfo() {
     formState: { errors },
     control,
     setValue,
-  } = useFormContext<Hubvisor>();
+  } = useFormContext<ZodHubvisor>();
 
-  const practice = useWatch<Hubvisor, "practice">({ name: "practice" });
+  const practice = useWatch<ZodHubvisor, "practice">({ name: "practice" });
 
   function getManagerOptions() {
     let options = ["None"];
@@ -187,7 +168,6 @@ function HubInfo() {
             <Controller
               name="practice"
               control={control}
-              rules={{ required: true }}
               render={({ field }) => (
                 <select {...field}>
                   <option value="">Sélectionner une practice</option>
@@ -198,11 +178,9 @@ function HubInfo() {
               )}
             />
           </label>
-          {errors.practice && (
-            <span className="text-red-500 text-sm italic">
-              Ce champ est obligatoire
-            </span>
-          )}
+          <span className="text-red-500 text-sm italic">
+            {errors.practice?.message}
+          </span>
         </div>
 
         <label className="flex gap-2 items-center">
@@ -213,6 +191,9 @@ function HubInfo() {
           >
             {getManagerOptions()}
           </select>
+          <span className="text-red-500 text-sm italic">
+            {errors.manager?.message}
+          </span>
         </label>
 
         <FormInput
@@ -220,16 +201,16 @@ function HubInfo() {
           type="number"
           label="Ancienneté (années)"
           rules={{ required: true, min: 0, max: 50 }}
-          errorsToDisplay={
-            <span className="text-red-500 text-sm italic">
-              {errors.seniority?.type === "min" &&
-                "L'ancienneté doit être supérieure à 0"}
-              {errors.seniority?.type === "max" &&
-                "L'ancienneté maximum est 50 ans"}
-              {errors.seniority?.type === "required" &&
-                "Ce champ est obligatoire"}
-            </span>
-          }
+          //   errorsToDisplay={
+          //     <span className="text-red-500 text-sm italic">
+          //       {errors.seniority?.type === "min" &&
+          //         "L'ancienneté doit être supérieure à 0"}
+          //       {errors.seniority?.type === "max" &&
+          //         "L'ancienneté maximum est 50 ans"}
+          //       {errors.seniority?.type === "required" &&
+          //         "Ce champ est obligatoire"}
+          //     </span>
+          //   }
         />
       </div>
     </>
@@ -240,7 +221,7 @@ function Skills() {
   const {
     register,
     formState: { errors },
-  } = useFormContext<Hubvisor>();
+  } = useFormContext<ZodHubvisor>();
   const { fields, append, remove } = useFieldArray({ name: "skills" });
 
   return (
